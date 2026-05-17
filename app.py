@@ -49,18 +49,31 @@ REQUIRED_FILES = {
 
 GRADE_ORDER = ["א", "ב", "ג", "ד", "ה", "ו"]
 
+# ── Pastel palette (Ministry-of-Education style) ────────────────────────────
+PALETTE = {
+    "navy":   "#4F7EA8",
+    "teal":   "#6DB7A3",
+    "green":  "#A5B879",
+    "orange": "#F3BE72",
+    "purple": "#9A7AA0",
+    "sky":    "#9EC3D7",
+    "red":    "#D95F59",
+    "grey":   "#B0BCCC",
+}
+CHART_BG = "#ffffff"
+
 MIKBATZ_COLORS = {
-    "מתקדמים בכל":             "#22c55e",
-    "תקינים בכל":              "#3b82f6",
-    "מתקשים לימודית":          "#f59e0b",
-    "מתקשים חברתית ורגשית":   "#a855f7",
-    "מתקשים בכל":              "#ef4444",
+    "מתקדמים בכל":           PALETTE["teal"],
+    "תקינים בכל":            PALETTE["navy"],
+    "מתקשים לימודית":        PALETTE["orange"],
+    "מתקשים חברתית ורגשית": PALETTE["purple"],
+    "מתקשים בכל":            PALETTE["red"],
 }
 
 STATUS_COLORS = {
-    "הסתיים": "#22c55e",
-    "חלקי":   "#f59e0b",
-    "חסר":    "#ef4444",
+    "הסתיים": PALETTE["teal"],
+    "חלקי":   PALETTE["orange"],
+    "חסר":    PALETTE["red"],
 }
 
 DIFFICULTY_ANSWERS = ["מתקשה", "מתקשה מאוד"]
@@ -100,130 +113,155 @@ def skill_rows(df_tosot: pd.DataFrame) -> pd.DataFrame:
 # ── Global CSS ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* RTL page */
-  html, body, [class*="css"] { direction: rtl; font-family: 'Segoe UI', Arial, sans-serif; }
+  /* ════════════════════════════════════════════════════════════════════
+     FORCED LIGHT THEME
+     Every major container gets an explicit background-color.
+     Never transparent — overrides browser/OS dark mode.
+  ════════════════════════════════════════════════════════════════════ */
+  :root { color-scheme: light only; }
 
-  /* Sidebar RTL */
-  section[data-testid="stSidebar"] { direction: rtl; }
-
-  /* Header gradient */
-  .main-header {
-    background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 50%, #1e3a5f 100%);
-    border-radius: 16px;
-    padding: 2rem 2.5rem;
-    margin-bottom: 1.5rem;
-    color: white;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  html, body {
+    background-color: #F8FAFC !important;
+    color: #1a2340 !important;
   }
-  .main-header h1 { font-size: 2.4rem; margin: 0; font-weight: 800; letter-spacing: -1px; }
-  .main-header p  { font-size: 1.05rem; margin: 0.4rem 0 0; opacity: 0.88; }
-
-  /* KPI cards */
-  .kpi-card {
-    background: white;
-    border-radius: 14px;
-    padding: 1.3rem 1.5rem;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-    border-right: 5px solid var(--accent);
-    text-align: right;
-    height: 100%;
-    transition: transform 0.15s;
+  [data-testid="stAppViewContainer"], .stApp {
+    background-color: #F8FAFC !important;
+    color: #1a2340 !important;
   }
-  .kpi-card:hover { transform: translateY(-2px); }
-  .kpi-value { font-size: 2.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
-  .kpi-label { font-size: 0.92rem; color: #64748b; margin-top: 0.3rem; }
-  .kpi-sub   { font-size: 0.8rem;  color: #94a3b8; margin-top: 0.15rem; }
-
-  /* Section headers */
-  .section-title {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: #1e3a5f;
-    margin: 1.5rem 0 0.8rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 2px solid #e2e8f0;
+  [data-testid="stAppViewContainer"] > .main, .main {
+    background-color: #F8FAFC !important;
   }
-
-  /* Upload status badges */
-  .badge-ok   { background:#dcfce7; color:#15803d; border-radius:8px; padding:3px 10px; font-size:0.82rem; font-weight:600; }
-  .badge-err  { background:#fee2e2; color:#b91c1c; border-radius:8px; padding:3px 10px; font-size:0.82rem; font-weight:600; }
-  .badge-wait { background:#f1f5f9; color:#64748b; border-radius:8px; padding:3px 10px; font-size:0.82rem; font-weight:600; }
-
-  /* Onboarding box */
-  .onboard-box {
-    background: linear-gradient(135deg, #f0f7ff 0%, #e8f4fd 100%);
-    border: 2px dashed #93c5fd;
-    border-radius: 16px;
-    padding: 2.5rem 2rem;
-    text-align: center;
-    margin: 2rem auto;
-    max-width: 640px;
+  .main .block-container {
+    background-color: #F8FAFC !important;
+    padding-top: 1.2rem; padding-bottom: 2rem; max-width: 1200px;
   }
-  .onboard-box h2 { color: #1e3a5f; font-size: 1.6rem; margin-bottom: 0.5rem; }
-  .onboard-box p  { color: #475569; font-size: 1rem; }
+  /* Tab panels */
+  [data-testid="stTabPanel"], .stTabs [data-baseweb="tab-panel"] {
+    background-color: #F8FAFC !important;
+  }
+  /* Expanders */
+  [data-testid="stExpander"] > div {
+    background-color: #ffffff !important;
+    border: 1px solid #e4e8ef; border-radius: 8px;
+  }
+  /* Dataframes */
+  [data-testid="stDataFrame"] { background-color: #ffffff !important; }
 
-  /* Chart container */
-  .chart-box {
-    background: white;
-    border-radius: 14px;
-    padding: 1rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-    margin-bottom: 1rem;
-  }
-
-  /* Validation table */
-  .val-ok  { color: #15803d; font-weight: 600; }
-  .val-err { color: #b91c1c; font-weight: 600; }
-
-  /* ── Chat interface ── */
-  .chat-bubble-user {
-    background: #1e3a5f;
-    color: white;
-    border-radius: 18px 18px 4px 18px;
-    padding: 0.75rem 1.1rem;
-    margin: 0.4rem 0 0.4rem 3rem;
-    text-align: right;
-    font-size: 0.97rem;
-    line-height: 1.5;
-  }
-  .chat-bubble-bot {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 18px 18px 18px 4px;
-    padding: 0.85rem 1.1rem;
-    margin: 0.4rem 3rem 0.4rem 0;
-    text-align: right;
-    font-size: 0.97rem;
-    line-height: 1.6;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-  }
-  .chat-bubble-bot p { margin: 0.2rem 0; }
-  .chat-meta {
-    font-size: 0.72rem;
-    color: #94a3b8;
-    text-align: left;
-    margin-bottom: 0.15rem;
-    padding-right: 0.3rem;
-  }
-  .example-qs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  /* RTL + font */
+  html, body, [class*="css"] {
     direction: rtl;
-    margin: 0.6rem 0 1rem;
+    font-family: 'Segoe UI', 'Noto Sans Hebrew', Arial, sans-serif;
   }
-  .chat-input-row { position: sticky; bottom: 0; background: inherit; padding: 0.5rem 0; }
+
+  /* Sidebar */
+  section[data-testid="stSidebar"],
+  [data-testid="stSidebarContent"] {
+    background-color: #ffffff !important;
+    border-left: 1px solid #e4e8ef !important;
+    direction: rtl;
+  }
+  section[data-testid="stSidebar"] * { direction: rtl; text-align: right; }
+
+  /* ── Header ── */
+  .main-header {
+    background: #1e3a5f; border-radius: 12px;
+    padding: 1.6rem 2rem; margin-bottom: 1.2rem;
+    color: #ffffff !important;
+  }
+  .main-header * { color: #ffffff !important; }
+  .main-header h1 {
+    font-size:2rem; margin:0; font-weight:700;
+    direction:rtl; text-align:right;
+    color:#ffffff !important;
+  }
+  .main-header p {
+    font-size:0.98rem; margin:0.3rem 0 0;
+    direction:rtl; text-align:right;
+    color:rgba(255,255,255,0.88) !important;
+  }
+
+  /* ── KPI cards ── */
+  .kpi-row { display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .kpi-card {
+    background: #ffffff !important;
+    border-radius:10px; padding:1rem 1.2rem;
+    box-shadow:0 1px 5px rgba(0,0,0,0.06);
+    border-top:3px solid var(--accent, #4F7EA8);
+    text-align:right; direction:rtl;
+    flex:1 1 0; min-width:130px; min-height:110px;
+    display:flex; flex-direction:column; justify-content:center;
+    color:#1a2340 !important;
+  }
+  .kpi-card:hover { box-shadow:0 3px 12px rgba(0,0,0,0.10); }
+  .kpi-icon  { font-size:1.2rem; margin-bottom:0.25rem; }
+  .kpi-value { font-size:2rem; font-weight:800; color:var(--accent, #4F7EA8); line-height:1.1; }
+  .kpi-label { font-size:0.82rem; color:#5a6a82; margin-top:0.2rem; }
+  .kpi-sub   { font-size:0.72rem; color:#8a9ab2; margin-top:0.1rem; min-height:0.9rem; }
+
+  /* ── Section headers ── */
+  .section-title {
+    font-size:1.15rem; font-weight:700; color:#1e3a5f;
+    margin:1.2rem 0 0.6rem; padding-bottom:0.35rem;
+    border-bottom:2px solid #dde2ea;
+    direction:rtl; text-align:right; background:transparent;
+  }
+
+  /* ── White content cards ── */
+  .chart-box {
+    background: #ffffff !important;
+    border-radius:10px; padding:0.8rem 1rem;
+    box-shadow:0 1px 5px rgba(0,0,0,0.05);
+    margin-bottom:0.8rem;
+    border:1px solid #e8ecf2;
+    direction:rtl; color:#1a2340;
+  }
+  .chart-box p, .chart-box caption, .chart-box small {
+    direction:rtl; text-align:right; color:#1a2340;
+  }
+
+  /* ── Badges ── */
+  .badge-ok   { background:#e6f7ef; color:#1d7a4e; border-radius:6px; padding:2px 9px; font-size:0.8rem; font-weight:600; }
+  .badge-err  { background:#fde8e8; color:#b83535; border-radius:6px; padding:2px 9px; font-size:0.8rem; font-weight:600; }
+  .badge-wait { background:#eef1f5; color:#5a6a82; border-radius:6px; padding:2px 9px; font-size:0.8rem; font-weight:600; }
+
+  /* ── Onboarding ── */
+  .onboard-box {
+    background:#ffffff !important; border:1px solid #dde2ea;
+    border-radius:12px; padding:2rem 1.8rem;
+    text-align:center; margin:1.5rem auto; max-width:600px;
+    direction:rtl; color:#1a2340;
+  }
+  .onboard-box h2 { color:#1e3a5f; font-size:1.5rem; margin-bottom:0.4rem; }
+  .onboard-box p  { color:#475569; font-size:0.95rem; }
+
+  /* ── Validation ── */
+  .val-ok  { color:#1d7a4e; font-weight:600; }
+  .val-err { color:#b83535; font-weight:600; }
+
+  /* ── RTL markdown / captions ── */
+  .stMarkdown, .stMarkdown p, .stMarkdown h1, .stMarkdown h2,
+  .stMarkdown h3, .stMarkdown li, .stMarkdown ul {
+    direction:rtl; text-align:right; color:#1a2340;
+  }
+  .stCaption, div[data-testid="stCaptionContainer"] {
+    direction:rtl; text-align:right; color:#5a6a82;
+  }
+  .stTabs [data-baseweb="tab"] { direction:rtl; }
+  div[data-testid="metric-container"] { direction:rtl; text-align:right; }
+
+  /* ── Chat messages ── */
   .intent-badge {
-    font-size: 0.7rem;
-    background: #f1f5f9;
-    color: #64748b;
-    border-radius: 6px;
-    padding: 1px 7px;
-    margin-right: 6px;
-    font-family: monospace;
+    font-size:0.68rem; background:#eef1f5; color:#5a6a82;
+    border-radius:5px; padding:1px 6px; margin-right:4px; font-family:monospace;
+  }
+  div[data-testid="stChatMessage"] {
+    direction:rtl;
+    background-color:#ffffff !important;
+    border:1px solid #e8ecf2; border-radius:10px; margin-bottom:0.4rem;
   }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -452,7 +490,7 @@ def completion_pct_by_class(df_status):
 
 def chart_status_donut(df_status):
     counts = questionnaire_status_dist(df_status)
-    colors = [STATUS_COLORS.get(s, "#94a3b8") for s in counts["סטטוס"]]
+    colors = [STATUS_COLORS.get(s, PALETTE["grey"]) for s in counts["סטטוס"]]
     fig = go.Figure(go.Pie(
         labels=counts["סטטוס"],
         values=counts["מספר תלמידים"],
@@ -468,8 +506,8 @@ def chart_status_donut(df_status):
         legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5),
         margin=dict(t=20, b=40, l=10, r=10),
         height=300,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     return fig
 
@@ -498,8 +536,8 @@ def chart_status_by_grade(df_status):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(t=30, b=30, l=30, r=10),
         height=320,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
@@ -508,7 +546,7 @@ def chart_status_by_grade(df_status):
 
 def chart_completion_pct_by_class(df_status):
     grp = completion_pct_by_class(df_status)
-    colors = ["#22c55e" if p >= 75 else "#f59e0b" if p >= 50 else "#ef4444"
+    colors = [PALETTE["teal"] if p >= 75 else PALETTE["orange"] if p >= 50 else PALETTE["red"]
               for p in grp["אחוז מילוי"]]
     fig = go.Figure(go.Bar(
         x=grp["כיתה"],
@@ -525,7 +563,7 @@ def chart_completion_pct_by_class(df_status):
             "<extra></extra>"
         ),
     ))
-    fig.add_hline(y=75, line_dash="dash", line_color="#94a3b8",
+    fig.add_hline(y=75, line_dash="dash", line_color=PALETTE["grey"],
                   annotation_text="75%", annotation_position="left")
     fig.update_layout(
         # Push yaxis ceiling high enough so "outside" text labels are never clipped
@@ -533,8 +571,8 @@ def chart_completion_pct_by_class(df_status):
         # Extra bottom margin so the x-axis title clears the tick labels
         margin=dict(t=30, b=55, l=40, r=10),
         height=360,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     fig.update_xaxes(
         showgrid=False,
@@ -547,7 +585,7 @@ def chart_completion_pct_by_class(df_status):
 
 def chart_mikbatz(df_tosot):
     data = mikbatz_dist(df_tosot)
-    colors = [MIKBATZ_COLORS.get(m, "#94a3b8") for m in data["מקבץ"]]
+    colors = [MIKBATZ_COLORS.get(m, PALETTE["grey"]) for m in data["מקבץ"]]
     fig = go.Figure(go.Bar(
         x=data["מקבץ"],
         y=data["מספר תלמידים"],
@@ -561,8 +599,8 @@ def chart_mikbatz(df_tosot):
         yaxis=dict(range=[0, data["מספר תלמידים"].max() * 1.18]),  # headroom for outside labels
         margin=dict(t=20, b=110, l=30, r=10),   # tall bottom margin for angled tick labels
         height=340,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     fig.update_xaxes(
         showgrid=False,
@@ -592,8 +630,8 @@ def chart_mikbatz_by_grade(df_tosot):
         legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5),
         margin=dict(t=20, b=80, l=30, r=10),
         height=350,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
@@ -606,7 +644,7 @@ def chart_programs(df_tochnit):
         y=data["תוכנית"],
         x=data["מספר שיוכים"],
         orientation="h",
-        marker_color="#3b82f6",
+        marker_color=PALETTE["navy"],
         text=data["מספר שיוכים"],
         textposition="outside",
     ))
@@ -615,8 +653,8 @@ def chart_programs(df_tochnit):
         yaxis=dict(autorange="reversed"),
         margin=dict(t=20, b=20, l=200, r=50),
         height=max(280, len(data) * 30),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
     fig.update_yaxes(showgrid=False)
@@ -630,7 +668,7 @@ def chart_no_prog_by_grade(df_status, df_tochnit):
         name="ללא תוכנית",
         x=grp["שכבה"].astype(str),
         y=grp["ללא_תוכנית"],
-        marker_color="#ef4444",
+        marker_color=PALETTE["red"],
         text=grp["ללא_תוכנית"],
         textposition="inside",
         insidetextanchor="middle",
@@ -639,7 +677,7 @@ def chart_no_prog_by_grade(df_status, df_tochnit):
         name="עם תוכנית",
         x=grp["שכבה"].astype(str),
         y=grp["עם תוכנית"],
-        marker_color="#22c55e",
+        marker_color=PALETTE["teal"],
         text=grp["עם תוכנית"],
         textposition="inside",
         insidetextanchor="middle",
@@ -651,7 +689,7 @@ def chart_no_prog_by_grade(df_status, df_tochnit):
             y=row["סה_כל"] + 1,
             text=f'{row["אחוז ללא תוכנית"]}% ללא',
             showarrow=False,
-            font=dict(size=11, color="#ef4444"),
+            font=dict(size=11, color=PALETTE["red"]),
             yanchor="bottom",
         )
     fig.update_layout(
@@ -661,8 +699,8 @@ def chart_no_prog_by_grade(df_status, df_tochnit):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(t=40, b=30, l=30, r=10),
         height=340,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
@@ -683,7 +721,7 @@ def chart_difficulty_by_skill(df_tosot):
         y=data["מיומנות"],
         x=data["תלמידים מתקשים"],
         orientation="h",
-        marker_color="#f59e0b",
+        marker_color=PALETTE["orange"],
         text=bar_labels,
         textposition="inside",
         insidetextanchor="end",     # anchor to the right tip of each bar — always visible
@@ -705,8 +743,8 @@ def chart_difficulty_by_skill(df_tosot):
         yaxis=dict(autorange="reversed"),
         margin=dict(t=10, b=50, l=220, r=20),   # right margin can be small now
         height=max(300, len(data) * 42),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
     )
     fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
     fig.update_yaxes(showgrid=False)
@@ -784,10 +822,10 @@ def render_onboarding():
       <div style="font-size:3.5rem; margin-bottom:0.5rem;">🦅</div>
       <h2>ברוכים הבאים לנץ תקומה</h2>
       <p>עוזר הנתונים החכם של המנהל/ת</p>
-      <hr style="border:none; border-top:1px solid #bfdbfe; margin:1rem 0;">
+      <hr style="border:none; border-top:1px solid #e2e8f0; margin:1rem 0;">
       <p style="font-size:0.95rem;">
         כדי להציג את לוח המחוונים, יש להעלות את שלושת קבצי האקסל
-        מהסרגל הצדדי משמאל.
+        מהסרגל הצדדי מימין.
       </p>
     </div>
     """, unsafe_allow_html=True)
@@ -808,7 +846,7 @@ def render_onboarding():
                         box-shadow:0 2px 12px rgba(0,0,0,0.07); text-align:right; height:100%;">
               <div style="font-size:2rem; margin-bottom:0.4rem;">{icon}</div>
               <div style="font-weight:700; color:#1e3a5f; margin-bottom:0.3rem;">{title}</div>
-              <div style="font-size:0.78rem; color:#3b82f6; font-family:monospace; margin-bottom:0.5rem;">{fname}</div>
+              <div style="font-size:0.78rem; color:#4F7EA8; font-family:monospace; margin-bottom:0.5rem;">{fname}</div>
               <div style="font-size:0.85rem; color:#64748b;">{desc}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -820,25 +858,25 @@ def render_onboarding():
 
 def render_kpi_cards(kpis):
     card_data = [
-        ("#3b82f6", "👨‍🎓", f"{kpis['total']:,}", "סך כל התלמידים", ""),
-        ("#22c55e", "✅", f"{kpis['completed']:,}", "שאלון הושלם", f"{kpis['pct_completed']}% מהכלל"),
-        ("#f59e0b", "⚠️", f"{kpis['partial']:,}",  "שאלון חלקי",   ""),
-        ("#ef4444", "❌", f"{kpis['missing']:,}",   "שאלון חסר",    ""),
-        ("#a855f7", "📚", f"{kpis['with_prog']:,}", "תלמידים עם תוכנית חינוכית", f"{kpis['without_prog']:,} ללא תוכנית"),
-        ("#f97316", "⚡", f"{kpis['difficult']:,}", "תלמידים מתקשים (שאלון הוגש)", "לפי שיוך מקבץ"),
+        (PALETTE["navy"], "👨‍🎓", f"{kpis['total']:,}",       "סך כל התלמידים",              ""),
+        (PALETTE["teal"], "✅",   f"{kpis['completed']:,}",   "שאלון הושלם",                 f"{kpis['pct_completed']}% מהכלל"),
+        (PALETTE["orange"], "⚠️",  f"{kpis['partial']:,}",     "שאלון חלקי",                  ""),
+        (PALETTE["red"], "❌",   f"{kpis['missing']:,}",     "שאלון חסר",                   ""),
+        (PALETTE["purple"], "📚",  f"{kpis['with_prog']:,}",   "עם תוכנית חינוכית",            f"{kpis['without_prog']:,} ללא תוכנית"),
+        (PALETTE["sky"], "⚡",  f"{kpis['difficult']:,}",   "תלמידים מתקשים",              "לפי שיוך מקבץ"),
     ]
-
-    cols = st.columns(len(card_data))
-    for col, (accent, icon, value, label, sub) in zip(cols, card_data):
-        with col:
-            st.markdown(f"""
-            <div class="kpi-card" style="--accent:{accent};">
-              <div style="font-size:1.4rem; margin-bottom:0.2rem;">{icon}</div>
-              <div class="kpi-value">{value}</div>
-              <div class="kpi-label">{label}</div>
-              <div class="kpi-sub">{sub}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    # Render as a single HTML flex row — guarantees uniform height across all cards
+    cards_html = '<div class="kpi-row">'
+    for accent, icon, value, label, sub in card_data:
+        cards_html += f"""
+        <div class="kpi-card" style="--accent:{accent};">
+          <div class="kpi-icon">{icon}</div>
+          <div class="kpi-value">{value}</div>
+          <div class="kpi-label">{label}</div>
+          <div class="kpi-sub">{sub}&nbsp;</div>
+        </div>"""
+    cards_html += '</div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -925,7 +963,7 @@ def _render_no_program_expander(df_status, df_tosot, df_tochnit):
         # ── Summary metric cards ───────────────────────────────────────────
         m1, m2, m3 = st.columns(3)
         m1.markdown(f"""
-        <div class="kpi-card" style="--accent:#ef4444;">
+        <div class="kpi-card" style="--accent:#D95F59;">
           <div style="font-size:1.3rem;">🔴</div>
           <div class="kpi-value">{count:,}</div>
           <div class="kpi-label">תלמידים ללא תוכנית</div>
@@ -934,7 +972,7 @@ def _render_no_program_expander(df_status, df_tosot, df_tochnit):
         """, unsafe_allow_html=True)
 
         m2.markdown(f"""
-        <div class="kpi-card" style="--accent:#f97316;">
+        <div class="kpi-card" style="--accent:#F3BE72;">
           <div style="font-size:1.3rem;">📊</div>
           <div class="kpi-value">{pct}%</div>
           <div class="kpi-label">אחוז מכלל התלמידים</div>
@@ -946,7 +984,7 @@ def _render_no_program_expander(df_status, df_tosot, df_tochnit):
         difficult_mkbtz = {"מתקשים לימודית", "מתקשים חברתית ורגשית", "מתקשים בכל"}
         difficult_no_prog = no_prog[no_prog["מקבץ"].isin(difficult_mkbtz)]
         m3.markdown(f"""
-        <div class="kpi-card" style="--accent:#a855f7;">
+        <div class="kpi-card" style="--accent:#9A7AA0;">
           <div style="font-size:1.3rem;">⚡</div>
           <div class="kpi-value">{len(difficult_no_prog):,}</div>
           <div class="kpi-label">מתוכם – תלמידים מתקשים</div>
@@ -980,7 +1018,7 @@ def _render_no_program_expander(df_status, df_tosot, df_tochnit):
 
         # Colour-code the מקבץ column via a styled dataframe
         def style_row(row):
-            color = MIKBATZ_COLORS.get(row["מקבץ"], "#94a3b8")
+            color = MIKBATZ_COLORS.get(row["מקבץ"], PALETTE["grey"])
             return [""] * (len(row) - 1) + [f"color: {color}; font-weight: 600"]
 
         styled = (
@@ -1028,7 +1066,7 @@ def render_programs_section(df_tochnit, df_status=None, df_tosot=None):
         )
         for mkb in ordered_mkbtz:
             sub = grp[grp["מקבץ"] == mkb].head(5)
-            color = MIKBATZ_COLORS.get(mkb, "#94a3b8")
+            color = MIKBATZ_COLORS.get(mkb, PALETTE["grey"])
             if mkb == "-":
                 label = "ללא שיוך מקבץ (לא הגישו שאלון)"
                 icon  = "⚪"
@@ -1203,8 +1241,8 @@ def main():
     # Header
     st.markdown("""
     <div class="main-header">
-      <h1>🦅 נץ תקומה</h1>
-      <p>עוזר נתונים בית ספרי · העלה את קבצי בית הספר וקבל תמונת מצב מיידית</p>
+      <h1 style="color:#ffffff !important;">🦅 נץ תקומה</h1>
+      <p style="color:rgba(255,255,255,0.88) !important;">עוזר נתונים בית ספרי · העלה את קבצי בית הספר וקבל תמונת מצב מיידית</p>
     </div>
     """, unsafe_allow_html=True)
 

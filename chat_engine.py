@@ -21,14 +21,26 @@ GRADE_ORDER        = ["א", "ב", "ג", "ד", "ה", "ו"]
 DIFFICULTY_ANSWERS = ["מתקשה", "מתקשה מאוד"]
 NON_SKILL_VALUE    = "-"
 DIFFICULT_MIKBATZ  = {"מתקשים לימודית", "מתקשים חברתית ורגשית", "מתקשים בכל"}
-MIKBATZ_COLORS     = {
-    "מתקדמים בכל":           "#22c55e",
-    "תקינים בכל":            "#3b82f6",
-    "מתקשים לימודית":        "#f59e0b",
-    "מתקשים חברתית ורגשית": "#a855f7",
-    "מתקשים בכל":            "#ef4444",
+PALETTE = {
+    "navy":   "#4F7EA8",
+    "teal":   "#6DB7A3",
+    "green":  "#A5B879",
+    "orange": "#F3BE72",
+    "purple": "#9A7AA0",
+    "sky":    "#9EC3D7",
+    "red":    "#D95F59",
+    "grey":   "#B0BCCC",
 }
-STATUS_COLORS = {"הסתיים": "#22c55e", "חלקי": "#f59e0b", "חסר": "#ef4444"}
+CHART_BG = "#ffffff"
+
+MIKBATZ_COLORS = {
+    "מתקדמים בכל":           PALETTE["teal"],
+    "תקינים בכל":            PALETTE["navy"],
+    "מתקשים לימודית":        PALETTE["orange"],
+    "מתקשים חברתית ורגשית": PALETTE["purple"],
+    "מתקשים בכל":            PALETTE["red"],
+}
+STATUS_COLORS = {"הסתיים": PALETTE["teal"], "חלקי": PALETTE["orange"], "חסר": PALETTE["red"]}
 
 
 # ── Data types ──────────────────────────────────────────────────────────────
@@ -278,7 +290,7 @@ def _bar_chart(labels, values, colors, title="", height=260, h=False):
             xaxis=dict(categoryorder="array", categoryarray=labels),
             yaxis=dict(range=[0, max(values)*1.2] if values else [0,1]))
     fig.update_layout(title=title, height=height, margin=dict(t=30,b=40,l=10,r=80),
-                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                      paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
                       showlegend=False)
     fig.update_xaxes(showgrid=not h, gridcolor="#f1f5f9")
     fig.update_yaxes(showgrid=h,     gridcolor="#f1f5f9")
@@ -351,7 +363,7 @@ def _handle_questionnaire_status_by_grade(df_status, query, ctx, **_) -> ChatRes
                              text=sub["מספר"], textposition="inside", insidetextanchor="middle"))
     fig.update_layout(barmode="stack", height=280, margin=dict(t=10,b=30,l=10,r=10),
                       legend=dict(orientation="h",y=-0.25),
-                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                      paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG)
     fig.update_xaxes(categoryorder="array", categoryarray=GRADE_ORDER, showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
     rows = []
@@ -539,42 +551,40 @@ def _handle_pupils_by_mikbatz(df_status, df_tosot, query, ctx, **_) -> ChatRespo
     return ChatResponse(text=text, chart=chart, context=ctx)
 
 
-def _handle_pupils_with_skill_difficulty(df_tosot, query, ctx, **_) -> ChatResponse:
+def _handle_pupils_with_skill_difficulty(df_tosot, query, ctx, df_status=None, **_) -> ChatResponse:
     """Return pupils who struggle in a specific מיומנות (any skill domain).
 
     BUSINESS RULE: skill_rows() is mandatory — מיומנות='-' rows are excluded.
     Counts are unique pupils, never rows.
-    Supports optional שכבה or כיתה filter extracted from the query.
+    Supports optional שכבה or כיתה filter.
+    Returns a bar chart by grade.
     """
     if df_tosot is None or df_tosot.empty:
         return ChatResponse(text="אין נתוני שאלון זמינים.", context=ctx)
 
-    # Extract which skill is being asked about
     skill = _extract_skill(query) or ctx.last_skill
     if not skill:
         return ChatResponse(
             text="לא זיהיתי איזו מיומנות נשאלת. נסה לציין במפורש, למשל: 'מתקשים באנגלית' או 'קשב'.",
-            context=ctx,
-        )
+            context=ctx)
 
     class_label = _extract_class(query)
     grade       = None if class_label else _extract_grade(query)
 
-    # skill_rows() is the mandatory gateway — excludes מיומנות="-"
-    sr   = skill_rows(df_tosot)
+    sr   = skill_rows(df_tosot)  # mandatory — excludes מיומנות="-"
     diff = sr[(sr["מיומנות"] == skill) & (sr["תשובה"].isin(DIFFICULTY_ANSWERS))]
 
     if class_label:
-        g, p   = class_label[0], class_label[1]
-        diff   = diff[(diff["שכבה"] == g) & (diff["מקבילה"] == p)]
+        g, p = class_label[0], class_label[1]
+        diff = diff[(diff["שכבה"] == g) & (diff["מקבילה"] == p)]
         ctx.last_class = class_label; ctx.last_grade = g
-        label  = f"בכיתה {class_label}"
+        label = f"בכיתה {class_label}"
     elif grade:
-        diff   = diff[diff["שכבה"] == grade]
+        diff = diff[diff["שכבה"] == grade]
         ctx.last_grade = grade
-        label  = f"בשכבה {grade}"
+        label = f"בשכבה {grade}"
     else:
-        label  = "בכלל בית הספר"
+        label = "בכלל בית הספר"
 
     unique = diff.drop_duplicates("מס' זהות תלמיד")[
         ["מס' זהות תלמיד", "שם תלמיד", "שכבה", "מקבילה", "מקבץ"]
@@ -582,19 +592,30 @@ def _handle_pupils_with_skill_difficulty(df_tosot, query, ctx, **_) -> ChatRespo
     unique["כיתה"] = unique["שכבה"] + unique["מקבילה"]
 
     if unique.empty:
-        ctx.last_skill  = skill
-        ctx.last_intent = "pupils_with_skill_difficulty"
+        ctx.last_skill = skill; ctx.last_intent = "pupils_with_skill_difficulty"
         return _no_results(f"במיומנות '{skill}' {label}", ctx)
 
-    ctx.last_skill  = skill
-    ctx.last_intent = "pupils_with_skill_difficulty"
+    # Bar chart by grade
+    grade_counts = (
+        unique.groupby("שכבה").size()
+        .reindex(GRADE_ORDER, fill_value=0)
+        .reset_index()
+    )
+    grade_counts.columns = ["שכבה", "מספר"]
+    chart = _bar_chart(
+        grade_counts["שכבה"].tolist(), grade_counts["מספר"].tolist(),
+        [PALETTE["navy"]] * len(grade_counts),
+        f"מתקשים ב'{skill}' לפי שכבה", height=260,
+    )
+
+    ctx.last_skill = skill; ctx.last_intent = "pupils_with_skill_difficulty"
     ctx.last_result_df = unique
     return ChatResponse(
         text=(f"נמצאו **{len(unique):,}** תלמידים ייחודיים המתקשים ב'{skill}' {label}.\n\n"
               f"_ספירה: תלמידים ייחודיים, לא שורות._"),
         table=unique[["שם תלמיד", "שכבה", "כיתה", "מקבץ"]],
-        context=ctx,
-    )
+        chart=chart,
+        context=ctx)
 
 
 def _handle_pupils_without_program(df_status, df_tosot, df_tochnit, query, ctx, **_) -> ChatResponse:
@@ -675,7 +696,80 @@ def _handle_pupils_without_program(df_status, df_tosot, df_tochnit, query, ctx, 
         table=table, context=ctx)
 
 
+def _handle_skill_difficulty_no_program(df_status, df_tosot, df_tochnit, query, ctx, **_) -> ChatResponse:
+    """Pupils who struggle in a specific מיומנות AND have no educational program.
+
+    BUSINESS RULE: skill_rows() mandatory — מיומנות='-' excluded.
+    Counts unique pupils, not rows.
+    """
+    if df_tosot is None or df_tosot.empty:
+        return ChatResponse(text="אין נתוני שאלון זמינים.", context=ctx)
+    if df_tochnit is None:
+        return ChatResponse(text="אין נתוני תוכניות זמינים.", context=ctx)
+
+    skill = _extract_skill(query) or ctx.last_skill
+    if not skill:
+        return ChatResponse(
+            text="לא זיהיתי איזו מיומנות נשאלת. נסה: 'מתקשים באנגלית שאינם בתוכנית'.",
+            context=ctx)
+
+    class_label = _extract_class(query)
+    grade       = None if class_label else _extract_grade(query)
+
+    sr   = skill_rows(df_tosot)
+    diff = sr[(sr["מיומנות"] == skill) & (sr["תשובה"].isin(DIFFICULTY_ANSWERS))]
+
+    if class_label:
+        g, p = class_label[0], class_label[1]
+        diff = diff[(diff["שכבה"] == g) & (diff["מקבילה"] == p)]
+        ctx.last_class = class_label; ctx.last_grade = g
+        label = f"בכיתה {class_label}"
+    elif grade:
+        diff = diff[diff["שכבה"] == grade]; ctx.last_grade = grade
+        label = f"בשכבה {grade}"
+    else:
+        label = "בכלל בית הספר"
+
+    unique = diff.drop_duplicates("מס' זהות תלמיד")[
+        ["מס' זהות תלמיד", "שם תלמיד", "שכבה", "מקבילה", "מקבץ"]
+    ].copy()
+    unique["כיתה"] = unique["שכבה"] + unique["מקבילה"]
+
+    # Filter to those without a program
+    assigned = set(df_tochnit["מס' זהות תלמיד"].unique())
+    no_prog  = unique[~unique["מס' זהות תלמיד"].isin(assigned)].copy()
+
+    if no_prog.empty:
+        ctx.last_skill = skill; ctx.last_intent = "skill_difficulty_no_program"
+        return _no_results(f"מתקשים ב'{skill}' ללא תוכנית {label}", ctx)
+
+    grade_counts = (
+        no_prog.groupby("שכבה").size()
+        .reindex(GRADE_ORDER, fill_value=0).reset_index()
+    )
+    grade_counts.columns = ["שכבה", "מספר"]
+    chart = _bar_chart(
+        grade_counts["שכבה"].tolist(), grade_counts["מספר"].tolist(),
+        [PALETTE["red"]] * len(grade_counts),
+        f"מתקשים ב'{skill}' ללא תוכנית – {label}", height=260)
+
+    table = no_prog[["שם תלמיד", "שכבה", "כיתה", "מקבץ"]].sort_values(["שכבה"])
+    ctx.last_skill = skill; ctx.last_intent = "skill_difficulty_no_program"
+    ctx.last_result_df = no_prog
+    return ChatResponse(
+        text=(f"נמצאו **{len(no_prog):,}** תלמידים המתקשים ב'{skill}' {label} "
+              f"ואינם משויכים לאף תוכנית חינוכית.\n\n"
+              f"_מתוך {len(unique):,} מתקשים ב'{skill}' {label}._"),
+        table=table, chart=chart, context=ctx)
+
+
 def _handle_difficult_pupils_without_program(df_status, df_tosot, df_tochnit, query, ctx, **_) -> ChatResponse:
+    """Pupils in difficulty מקבצים who have no educational program.
+
+    If a specific מקבץ (e.g. 'מתקשים בכל') is named in the query, filter to
+    that group only.  If only the general 'מתקשים' is used, include all three
+    DIFFICULT_MIKBATZ groups.
+    """
     if df_tochnit is None:
         return ChatResponse(text="אין נתוני תוכניות זמינים.", context=ctx)
     whole_school = _is_whole_school(query)
@@ -683,6 +777,18 @@ def _handle_difficult_pupils_without_program(df_status, df_tosot, df_tochnit, qu
     working      = base if base is not None else df_status
     class_label  = _extract_class(query)
     grade        = None if class_label else _extract_grade(query)
+
+    # Determine which מקבץ groups to use
+    specific_mkb = _extract_mikbatz(query)
+    if specific_mkb and specific_mkb in DIFFICULT_MIKBATZ:
+        # User asked specifically about one difficulty group
+        mkbatz_filter = {specific_mkb}
+        mkb_label = f"מקבץ '{specific_mkb}'"
+    else:
+        # General "מתקשים" — use all three difficulty groups
+        mkbatz_filter = DIFFICULT_MIKBATZ
+        mkb_label = "כלל קבוצות הקושי"
+
     assigned = set(df_tochnit["מס' זהות תלמיד"].unique())
     df = working[~working["ת.ז תלמיד"].isin(assigned)].copy()
     if df_tosot is not None and not df_tosot.empty:
@@ -691,26 +797,38 @@ def _handle_difficult_pupils_without_program(df_status, df_tosot, df_tochnit, qu
     else:
         df["מקבץ"] = "לא ידוע"
     df["כיתה"] = df["שכבה"] + df["מקבילה"]
-    df = df[df["מקבץ"].isin(DIFFICULT_MIKBATZ)]
+    df = df[df["מקבץ"].isin(mkbatz_filter)]
+
     if class_label:
         g, p = class_label[0], class_label[1]
-        df = df[(df["שכבה"]==g) & (df["מקבילה"]==p)]
-        ctx.last_class=class_label; ctx.last_grade=g; label=f"בכיתה {class_label}"
+        df = df[(df["שכבה"] == g) & (df["מקבילה"] == p)]
+        ctx.last_class = class_label; ctx.last_grade = g; label = f"בכיתה {class_label}"
     elif grade:
-        df = df[df["שכבה"]==grade]; ctx.last_grade=grade; label=f"בשכבה {grade}"
+        df = df[df["שכבה"] == grade]; ctx.last_grade = grade; label = f"בשכבה {grade}"
     else:
         label = "בכלל בית הספר" if base is None else "בתוצאות הקודמות"
+
     if df.empty:
-        return _no_results(label, ctx)
-    gc = df.groupby("שכבה").size().reindex(GRADE_ORDER,fill_value=0).reset_index()
-    gc.columns = ["שכבה","מספר"]
+        return _no_results(f"{mkb_label} ללא תוכנית {label}", ctx)
+
+    gc = df.groupby("שכבה").size().reindex(GRADE_ORDER, fill_value=0).reset_index()
+    gc.columns = ["שכבה", "מספר"]
     chart = _bar_chart(gc["שכבה"].tolist(), gc["מספר"].tolist(),
-                       ["#ef4444"]*len(gc), f"מתקשים ללא תוכנית – {label}", height=260)
-    table = df[["שם תלמיד","שכבה","כיתה","מקבץ"]].sort_values(["שכבה","מקבץ"])
-    mkbatzim = ", ".join(sorted(df["מקבץ"].unique()))
-    ctx.last_intent="difficult_pupils_without_program"; ctx.last_result_df=df
+                       [PALETTE["red"]] * len(gc),
+                       f"{mkb_label} ללא תוכנית – {label}", height=260)
+
+    table = df[["שם תלמיד", "שכבה", "כיתה", "מקבץ"]].sort_values(["שכבה", "מקבץ"])
+
+    # Build text — only mention sub-groups when showing all groups
+    if mkbatz_filter == DIFFICULT_MIKBATZ:
+        mkbatzim = ", ".join(sorted(df["מקבץ"].unique()))
+        extra = f"\n\nמקבצים: {mkbatzim}."
+    else:
+        extra = ""  # user asked for a specific group — don't confuse with list
+
+    ctx.last_intent = "difficult_pupils_without_program"; ctx.last_result_df = df
     return ChatResponse(
-        text=f"נמצאו **{len(df):,}** תלמידים מתקשים ללא תוכנית {label}.\n\nמקבצים: {mkbatzim}.",
+        text=f"נמצאו **{len(df):,}** תלמידים ({mkb_label}) ללא תוכנית חינוכית {label}.{extra}",
         table=table, chart=chart, context=ctx)
 
 
@@ -797,6 +915,7 @@ HANDLER_MAP = {
     "pupils_partial_questionnaire":     _handle_pupils_partial_questionnaire,
     "pupils_by_mikbatz":                _handle_pupils_by_mikbatz,
     "pupils_with_skill_difficulty":     _handle_pupils_with_skill_difficulty,
+    "skill_difficulty_no_program":      _handle_skill_difficulty_no_program,
     "pupils_without_program":           _handle_pupils_without_program,
     "difficult_pupils_without_program": _handle_difficult_pupils_without_program,
     "class_summary":                    _handle_class_summary,

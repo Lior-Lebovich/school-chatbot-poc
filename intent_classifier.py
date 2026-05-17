@@ -27,6 +27,7 @@ INTENTS = [
     "pupils_partial_questionnaire",
     "pupils_by_mikbatz",
     "pupils_with_skill_difficulty",
+    "skill_difficulty_no_program",
     "pupils_without_program",
     "difficult_pupils_without_program",
     "class_summary",
@@ -174,6 +175,31 @@ RULES: list[IntentRule] = [
         priority=80,
     ),
 
+    # ── Skill difficulty + no program (priority 87 — beats difficult_no_prog) ──
+    # "מי המתקשים במתמטיקה שאינם בתוכנית?"
+    IntentRule(
+        intent="skill_difficulty_no_program",
+        required=[
+            # difficulty + skill domain
+            ["מתקשה", "מתקשים", "קשיים", "קושי", "מתקשות", "מתקשת"],
+            ["מתמטיקה", "מתמט", "חשבון",
+             "אנגלית", "אנגלי",
+             "שפת אם", "קריאה", "כתיבה",
+             "היבטים חברתיים", "חברתי", "חברתית",
+             "היבטים רגשיים", "רגשי", "רגשית",
+             "היבטים התנהגותיים", "התנהגות",
+             "מוטיבציה", "הרגלי למידה",
+             "קשב", "פעלתנות",
+             "חושי תנועתי", "חושי",
+             "מיומנות", "מיומנויות"],
+            # AND a no-program qualifier
+            ["ללא תוכנית", "אין תוכנית", "שאינם בתוכנית", "אינם בתוכנית",
+             "שאינם משויכים", "אינם משויכים", "ללא שיוך",
+             "לא משויך", "לא משויכים"],
+        ],
+        priority=87,
+    ),
+
     # ── Difficult pupils without program ─────────────────────────────────────
     IntentRule(
         intent="difficult_pupils_without_program",
@@ -288,6 +314,7 @@ INTENT_LABELS: dict[str, str] = {
     "pupils_partial_questionnaire":    "תלמידים עם שאלון חלקי",
     "pupils_by_mikbatz":               "תלמידים לפי מקבץ",
     "pupils_with_skill_difficulty":    "מתקשים במיומנות",
+    "skill_difficulty_no_program":     "מתקשים במיומנות ללא תוכנית",
     "pupils_without_program":          "ללא תוכנית חינוכית",
     "difficult_pupils_without_program":"מתקשים ללא תוכנית",
     "class_summary":                   "סיכום כיתה",
