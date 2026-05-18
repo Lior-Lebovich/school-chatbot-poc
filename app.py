@@ -62,6 +62,66 @@ PALETTE = {
 }
 CHART_BG = "#ffffff"
 
+# Explicit light-theme defaults applied to every Plotly figure.
+# Prevents dark-mode browser/OS theme from bleeding into chart fonts and axes.
+_CHART_FONT_COLOR = "#1a2340"
+_CHART_GRID_COLOR = "#e8ecf2"
+
+def _apply_light_theme(fig, height=None):
+    """Apply explicit light-theme colours to every Plotly figure.
+
+    Sets font, axis, legend, title, and bar-label colours explicitly so that
+    no colour is left transparent or inherited — which breaks in dark mode.
+    Call this on every chart before returning it.
+    """
+    font_cfg = dict(color=_CHART_FONT_COLOR,
+                    family="Segoe UI, Noto Sans Hebrew, Arial, sans-serif")
+    tick_cfg = dict(color=_CHART_FONT_COLOR)
+
+    updates = dict(
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
+        font=font_cfg,
+        title=dict(font=dict(color=_CHART_FONT_COLOR)),
+    )
+    if height is not None:
+        updates["height"] = height
+
+    fig.update_layout(**updates)
+    fig.update_xaxes(
+        tickfont=tick_cfg,
+        title_font=dict(color=_CHART_FONT_COLOR),
+        gridcolor=_CHART_GRID_COLOR,
+        zerolinecolor=_CHART_GRID_COLOR,
+    )
+    fig.update_yaxes(
+        tickfont=tick_cfg,
+        title_font=dict(color=_CHART_FONT_COLOR),
+        gridcolor=_CHART_GRID_COLOR,
+        zerolinecolor=_CHART_GRID_COLOR,
+    )
+    fig.update_layout(
+        legend=dict(font=dict(color=_CHART_FONT_COLOR)),
+    )
+    # Force bar/scatter text label colour for every trace.
+    # Traces with textposition="inside" that already set their own textfont
+    # (e.g. white-on-coloured bars) are left alone; we only add colour where
+    # textfont.color is not yet set explicitly on that trace.
+    for trace in fig.data:
+        if hasattr(trace, "textfont") and trace.textfont is not None:
+            existing = trace.textfont.color
+            if existing is None or existing == "":
+                trace.textfont = dict(**(trace.textfont.to_plotly_json() or {}),
+                                      color=_CHART_FONT_COLOR)
+        elif hasattr(trace, "textposition") and trace.textposition not in (None, "none"):
+            # Trace has text labels but no textfont set at all
+            try:
+                trace.textfont = dict(color=_CHART_FONT_COLOR)
+            except Exception:
+                pass
+    return fig
+
+
 MIKBATZ_COLORS = {
     "מתקדמים בכל":           PALETTE["teal"],
     "תקינים בכל":            PALETTE["navy"],
@@ -153,7 +213,7 @@ st.markdown("""
     font-family: 'Segoe UI', 'Noto Sans Hebrew', Arial, sans-serif;
   }
 
-  /* Sidebar */
+  /* ── Sidebar — force light even in browser dark mode ── */
   section[data-testid="stSidebar"],
   [data-testid="stSidebarContent"] {
     background-color: #ffffff !important;
@@ -161,6 +221,90 @@ st.markdown("""
     direction: rtl;
   }
   section[data-testid="stSidebar"] * { direction: rtl; text-align: right; }
+
+  /* All text inside sidebar */
+  section[data-testid="stSidebar"] label,
+  section[data-testid="stSidebar"] p,
+  section[data-testid="stSidebar"] span,
+  section[data-testid="stSidebar"] div,
+  section[data-testid="stSidebar"] small,
+  section[data-testid="stSidebar"] button {
+    color: #1a2340 !important;
+  }
+
+  /* ── File uploader — drag-and-drop zone ── */
+  [data-testid="stFileUploader"],
+  [data-testid="stFileUploaderDropzone"],
+  [data-testid="stFileUploaderDropzoneInput"] {
+    background-color: #f8fafc !important;
+    border: 1.5px dashed #b0bccc !important;
+    border-radius: 8px !important;
+    color: #1a2340 !important;
+  }
+
+  /* The inner section/label text inside the dropzone */
+  [data-testid="stFileUploaderDropzone"] *,
+  [data-testid="stFileUploaderDropzone"] span,
+  [data-testid="stFileUploaderDropzone"] p,
+  [data-testid="stFileUploaderDropzone"] small {
+    color: #5a6a82 !important;
+    background-color: transparent !important;
+  }
+
+  /* Browse-files / upload button inside the dropzone */
+  [data-testid="stFileUploaderDropzone"] button,
+  [data-testid="baseButton-secondary"] {
+    background-color: #ffffff !important;
+    color: #1e3a5f !important;
+    border: 1.5px solid #4F7EA8 !important;
+    border-radius: 6px !important;
+  }
+  [data-testid="stFileUploaderDropzone"] button:hover,
+  [data-testid="baseButton-secondary"]:hover {
+    background-color: #eef3f8 !important;
+    color: #1e3a5f !important;
+  }
+
+  /* ── Uploaded file pill (the card that appears after upload) ── */
+  [data-testid="stFileUploaderFile"],
+  [data-testid="stUploadedFile"],
+  .uploadedFile {
+    background-color: #ffffff !important;
+    border: 1px solid #dde2ea !important;
+    border-radius: 6px !important;
+    color: #1a2340 !important;
+  }
+
+  /* File name text */
+  [data-testid="stFileUploaderFile"] span,
+  [data-testid="stUploadedFile"] span,
+  [data-testid="stFileUploaderFileName"],
+  .uploadedFileName {
+    color: #1a2340 !important;
+    background-color: transparent !important;
+  }
+
+  /* File size text */
+  [data-testid="stFileUploaderFileData"] small,
+  [data-testid="stFileUploaderFileData"] span,
+  [data-testid="stUploadedFileData"] small,
+  [data-testid="stUploadedFileData"] span {
+    color: #5a6a82 !important;
+  }
+
+  /* Remove-file (×) icon button */
+  [data-testid="stFileUploaderDeleteBtn"] button,
+  [data-testid="stUploadedFileDeleteBtn"] button,
+  [aria-label="Remove file"] {
+    background-color: transparent !important;
+    color: #8a9ab2 !important;
+    border: none !important;
+  }
+  [data-testid="stFileUploaderDeleteBtn"] button:hover,
+  [data-testid="stUploadedFileDeleteBtn"] button:hover {
+    color: #D95F59 !important;
+    background-color: #fde8e8 !important;
+  }
 
   /* ── Header ── */
   .main-header {
@@ -249,15 +393,178 @@ st.markdown("""
   .stTabs [data-baseweb="tab"] { direction:rtl; }
   div[data-testid="metric-container"] { direction:rtl; text-align:right; }
 
-  /* ── Chat messages ── */
+  /* ── Chat ── */
   .intent-badge {
     font-size:0.68rem; background:#eef1f5; color:#5a6a82;
     border-radius:5px; padding:1px 6px; margin-right:4px; font-family:monospace;
   }
+
+  /* ── Chat tab outer columns ── */
+  [data-testid="stVerticalBlock"] { background-color: transparent !important; }
+
+  /* ── Example questions panel (the left column) ── */
+  .chat-examples-panel,
+  .chat-examples-panel * {
+    background-color: #ffffff !important;
+    color: #1a2340 !important;
+  }
+
+  /* Buttons inside the examples panel */
+  .chat-examples-panel button,
+  .chat-examples-panel [data-testid="baseButton-secondary"] {
+    background-color: #f8fafc !important;
+    color: #1e3a5f !important;
+    border: 1px solid #dde2ea !important;
+    border-radius: 7px !important;
+  }
+  .chat-examples-panel button:hover {
+    background-color: #eef3f8 !important;
+    color: #1e3a5f !important;
+    border-color: #4F7EA8 !important;
+  }
+
+  /* ── All Streamlit buttons in the chat area — light forced ── */
+  [data-testid="stButton"] > button {
+    background-color: #f8fafc !important;
+    color: #1e3a5f !important;
+    border: 1px solid #dde2ea !important;
+  }
+  [data-testid="stButton"] > button:hover {
+    background-color: #eef3f8 !important;
+    border-color: #4F7EA8 !important;
+  }
+
+  /* ── Chat message containers (user + assistant) ── */
   div[data-testid="stChatMessage"] {
-    direction:rtl;
-    background-color:#ffffff !important;
-    border:1px solid #e8ecf2; border-radius:10px; margin-bottom:0.4rem;
+    direction: rtl;
+    background-color: #ffffff !important;
+    border: 1px solid #e8ecf2 !important;
+    border-radius: 10px;
+    margin-bottom: 0.4rem;
+    color: #1a2340 !important;
+  }
+  /* All text/elements inside any message bubble */
+  div[data-testid="stChatMessage"] *,
+  div[data-testid="stChatMessage"] p,
+  div[data-testid="stChatMessage"] span,
+  div[data-testid="stChatMessage"] div,
+  div[data-testid="stChatMessage"] li {
+    color: #1a2340 !important;
+    background-color: transparent !important;
+  }
+  /* Avatar column */
+  div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-user"],
+  div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] {
+    background-color: #eef3f8 !important;
+    color: #1e3a5f !important;
+  }
+  /* User message: slightly tinted background to distinguish from assistant */
+  div[data-testid="stChatMessage"][data-testid*="user"],
+  div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+    background-color: #eef3f8 !important;
+  }
+
+  /* ── Chat input box ── */
+  /* Target every wrapper layer Streamlit puts around the input */
+  [data-testid="stChatInputContainer"],
+  [data-testid="stChatInput"],
+  .stChatInputContainer,
+  [data-testid="stBottom"],
+  [data-testid="stBottom"] > div,
+  [data-testid="stChatInputContainer"] > div,
+  section.main [data-testid="stBottom"],
+  section.main [data-testid="stBottom"] > * {
+    background-color: #ffffff !important;
+    border-color: #c8d2de !important;
+    color: #1a2340 !important;
+  }
+  /* The visible input border wrapper */
+  [data-testid="stChatInputContainer"] {
+    border: 1.5px solid #c8d2de !important;
+    border-radius: 10px !important;
+  }
+  /* Textarea */
+  [data-testid="stChatInputContainer"] textarea,
+  [data-testid="stChatInput"] textarea {
+    background-color: #ffffff !important;
+    color: #1a2340 !important;
+    caret-color: #1e3a5f !important;
+  }
+  [data-testid="stChatInputContainer"] textarea::placeholder,
+  [data-testid="stChatInput"] textarea::placeholder {
+    color: #8a9ab2 !important;
+  }
+  /* Send button */
+  [data-testid="stChatInputContainer"] button,
+  [data-testid="stChatInput"] button {
+    background-color: #4F7EA8 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 7px !important;
+  }
+  [data-testid="stChatInputContainer"] button:hover,
+  [data-testid="stChatInput"] button:hover {
+    background-color: #3d6a8f !important;
+  }
+  /* SVG icon inside send button */
+  [data-testid="stChatInputContainer"] button svg,
+  [data-testid="stChatInput"] button svg {
+    fill: #ffffff !important;
+    stroke: #ffffff !important;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     DARK-MODE ROBUSTNESS — force explicit colours on Streamlit
+     widget chrome that can pick up OS/browser dark theme.
+  ════════════════════════════════════════════════════════════ */
+
+  /* Tab bar background and labels */
+  .stTabs [data-baseweb="tab-list"] {
+    background-color: #F8FAFC !important;
+    border-bottom: 2px solid #dde2ea !important;
+  }
+  .stTabs [data-baseweb="tab"] {
+    background-color: transparent !important;
+    color: #1e3a5f !important;
+    font-weight: 600;
+    direction: rtl;
+  }
+  .stTabs [aria-selected="true"] {
+    color: #1e3a5f !important;
+    border-bottom: 3px solid #4F7EA8 !important;
+    background-color: #ffffff !important;
+  }
+  .stTabs [data-baseweb="tab"]:hover {
+    color: #4F7EA8 !important;
+    background-color: #eef3f8 !important;
+  }
+
+  /* Selectbox / radio / checkbox labels */
+  .stSelectbox label, .stRadio label, .stCheckbox label,
+  .stTextInput label, .stFileUploader label,
+  [data-testid="stWidgetLabel"] {
+    color: #1a2340 !important;
+  }
+
+  /* Expander header text */
+  [data-testid="stExpander"] summary,
+  [data-testid="stExpander"] summary p,
+  [data-testid="stExpander"] summary span {
+    color: #1a2340 !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Metrics */
+  [data-testid="metric-container"] label,
+  [data-testid="metric-container"] div {
+    color: #1a2340 !important;
+  }
+
+  /* Plotly chart containers — ensure the SVG sits on white */
+  [data-testid="stPlotlyChart"],
+  .js-plotly-plot,
+  .plot-container {
+    background-color: #ffffff !important;
   }
 </style>
 """, unsafe_allow_html=True)
@@ -473,6 +780,38 @@ def difficulty_by_skill(df_tosot):
     return skill_counts.sort_values("תלמידים מתקשים", ascending=False)
 
 
+# Order in which תשובה levels appear in the grouped bar chart
+ANSWER_LEVEL_ORDER = ["מתקשה מאוד", "מתקשה", "תקין", "מתקדם"]
+
+# Pastel colours per answer level (ordered to match ANSWER_LEVEL_ORDER)
+ANSWER_LEVEL_COLORS = {
+    "מתקשה מאוד": PALETTE["red"],
+    "מתקשה":      PALETTE["orange"],
+    "תקין":        PALETTE["navy"],
+    "מתקדם":       PALETTE["teal"],
+}
+
+
+def skill_level_by_skill(df_tosot):
+    """Count unique pupils per (מיומנות, תשובה) pair.
+
+    Business rules:
+    - Excludes rows where מיומנות = "-" (via skill_rows())
+    - Only includes תשובה values in ANSWER_LEVEL_ORDER
+    - Counts UNIQUE pupils per cell — a pupil with many היגד rows in the same
+      (מיומנות, תשובה) combination is counted once.
+    """
+    sr = skill_rows(df_tosot)
+    relevant = sr[sr["תשובה"].isin(ANSWER_LEVEL_ORDER)]
+    grp = (
+        relevant.groupby(["מיומנות", "תשובה"])["מס' זהות תלמיד"]
+        .nunique()
+        .reset_index(name="תלמידים")
+    )
+    return grp
+
+
+
 def completion_pct_by_class(df_status):
     df = df_status.copy()
     df["כיתה"] = df["שכבה"] + df["מקבילה"]
@@ -509,6 +848,7 @@ def chart_status_donut(df_status):
         paper_bgcolor=CHART_BG,
         plot_bgcolor=CHART_BG,
     )
+    _apply_light_theme(fig)
     return fig
 
 
@@ -541,6 +881,7 @@ def chart_status_by_grade(df_status):
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+    _apply_light_theme(fig)
     return fig
 
 
@@ -580,6 +921,7 @@ def chart_completion_pct_by_class(df_status):
         tickangle=0,
     )
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+    _apply_light_theme(fig)
     return fig
 
 
@@ -608,6 +950,7 @@ def chart_mikbatz(df_tosot):
         automargin=True,        # let Plotly expand margin further if still needed
     )
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+    _apply_light_theme(fig)
     return fig
 
 
@@ -635,6 +978,7 @@ def chart_mikbatz_by_grade(df_tosot):
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+    _apply_light_theme(fig)
     return fig
 
 
@@ -658,6 +1002,7 @@ def chart_programs(df_tochnit):
     )
     fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
     fig.update_yaxes(showgrid=False)
+    _apply_light_theme(fig)
     return fig
 
 
@@ -704,6 +1049,7 @@ def chart_no_prog_by_grade(df_status, df_tochnit):
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+    _apply_light_theme(fig)
     return fig
 
 
@@ -748,6 +1094,61 @@ def chart_difficulty_by_skill(df_tosot):
     )
     fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
     fig.update_yaxes(showgrid=False)
+    _apply_light_theme(fig)
+    return fig
+
+
+
+def chart_skill_levels_by_skill(df_tosot):
+    """Grouped bar chart: unique pupils per תשובה level for each מיומנות.
+
+    x-axis: מיומנות (skill domain)
+    grouped bars: one bar per תשובה level in ANSWER_LEVEL_ORDER
+    y-axis: unique pupils
+    """
+    data = skill_level_by_skill(df_tosot)
+    if data.empty:
+        return go.Figure()
+
+    # Sort skills alphabetically for a stable x-axis order
+    skills_sorted = sorted(data["מיומנות"].unique())
+
+    fig = go.Figure()
+    for level in ANSWER_LEVEL_ORDER:
+        subset = data[data["תשובה"] == level]
+        # Align to full skill list (fill 0 for missing cells)
+        counts = {row["מיומנות"]: row["תלמידים"] for _, row in subset.iterrows()}
+        y_vals = [counts.get(s, 0) for s in skills_sorted]
+        fig.add_trace(go.Bar(
+            name=level,
+            x=skills_sorted,
+            y=y_vals,
+            marker_color=ANSWER_LEVEL_COLORS[level],
+            text=[str(v) if v > 0 else "" for v in y_vals],
+            textposition="outside",
+            textfont=dict(size=10),
+        ))
+
+    fig.update_layout(
+        barmode="group",
+        xaxis=dict(
+            tickangle=-30,
+            automargin=True,
+        ),
+        yaxis=dict(range=[0, data["תלמידים"].max() * 1.22]),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="right", x=1,
+        ),
+        margin=dict(t=40, b=100, l=40, r=10),
+        height=420,
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
+    )
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=True, gridcolor=_CHART_GRID_COLOR)
+    _apply_light_theme(fig)
     return fig
 
 
@@ -944,6 +1345,13 @@ def render_mikbatz_section(df_tosot):
     st.markdown('<div class="chart-box">', unsafe_allow_html=True)
     st.caption("תלמידים ייחודיים מתקשים לפי מיומנות — ספירת תלמידים (לא שורות). תלמיד נספר פעם אחת לכל מיומנות אם ענה 'מתקשה' או 'מתקשה מאוד' על לפחות היגד אחד. האחוז הוא מתוך תלמידים שהגישו שאלון.")
     st.plotly_chart(chart_difficulty_by_skill(df_tosot), use_container_width=True, config={"displayModeBar": False})
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # NEW — Grouped bar: pupil level per skill
+    st.markdown('<div class="section-title" style="margin-top:1.4rem;">📊 התפלגות רמות תפקוד לפי מיומנות</div>', unsafe_allow_html=True)
+    st.markdown('<div class="chart-box">', unsafe_allow_html=True)
+    st.caption("מספר תלמידים ייחודיים בכל רמת תשובה, לפי מיומנות — כל תלמיד נספר פעם אחת לכל צירוף (מיומנות, תשובה). אינו כולל שורות עם מיומנות '-'.")
+    st.plotly_chart(chart_skill_levels_by_skill(df_tosot), use_container_width=True, config={"displayModeBar": False})
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -1174,9 +1582,10 @@ def render_chat_tab(df_status, df_tosot, df_tochnit):
 
     with col_examples:
         st.markdown(
-            '<div style="background:#f8fafc; border-radius:12px; padding:1rem 0.8rem;'
-            ' border:1px solid #e2e8f0; direction:rtl;">'
-            '<div style="font-weight:700; color:#1e3a5f; margin-bottom:0.6rem;'
+            '<div class="chat-examples-panel" style="background:#ffffff !important;'
+            ' border-radius:12px; padding:1rem 0.8rem;'
+            ' border:1px solid #dde2ea; direction:rtl;">'
+            '<div style="font-weight:700; color:#1e3a5f !important; margin-bottom:0.6rem;'
             ' font-size:0.92rem;">💡 שאלות לדוגמה</div>',
             unsafe_allow_html=True,
         )
