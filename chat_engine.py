@@ -289,9 +289,16 @@ def _bar_chart(labels, values, colors, title="", height=260, h=False):
         fig.update_layout(
             xaxis=dict(categoryorder="array", categoryarray=labels),
             yaxis=dict(range=[0, max(values)*1.2] if values else [0,1]))
-    fig.update_layout(title=title, height=height, margin=dict(t=30,b=40,l=10,r=80),
-                      paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
-                      showlegend=False)
+
+    layout_kwargs = dict(height=height, margin=dict(t=30,b=40,l=10,r=80),
+                         paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
+                         showlegend=False)
+    # Only set title when there is actual text — passing title="" or title=None
+    # causes Plotly to create a Title object with text="" which can render as
+    # "undefined" in the SVG when font styling is applied afterwards.
+    if title:
+        layout_kwargs["title_text"] = title
+    fig.update_layout(**layout_kwargs)
     fig.update_xaxes(showgrid=not h, gridcolor="#f1f5f9")
     fig.update_yaxes(showgrid=h,     gridcolor="#f1f5f9")
     return fig

@@ -82,12 +82,29 @@ def _apply_light_theme(fig, height=None):
         paper_bgcolor=CHART_BG,
         plot_bgcolor=CHART_BG,
         font=font_cfg,
-        title=dict(font=dict(color=_CHART_FONT_COLOR)),
     )
     if height is not None:
         updates["height"] = height
 
     fig.update_layout(**updates)
+
+    # Style the title font ONLY when the figure already has a non-empty title.
+    # Never call update_layout(title=...) or title_font=... on a figure with
+    # no title — doing so creates a Title object whose text Plotly may serialise
+    # as "undefined" in the SVG.
+    existing_title = ""
+    if fig.layout.title and fig.layout.title.text is not None:
+        existing_title = str(fig.layout.title.text).strip()
+
+    # Defensive cleanup: erase any spurious "undefined" title
+    if existing_title.lower() in ("undefined", "none"):
+        fig.update_layout(title_text="")
+        existing_title = ""
+
+    if existing_title:
+        # Only add font styling when there is real title text
+        fig.update_layout(title_font=dict(color=_CHART_FONT_COLOR))
+
     fig.update_xaxes(
         tickfont=tick_cfg,
         title_font=dict(color=_CHART_FONT_COLOR),
@@ -114,7 +131,6 @@ def _apply_light_theme(fig, height=None):
                 trace.textfont = dict(**(trace.textfont.to_plotly_json() or {}),
                                       color=_CHART_FONT_COLOR)
         elif hasattr(trace, "textposition") and trace.textposition not in (None, "none"):
-            # Trace has text labels but no textfont set at all
             try:
                 trace.textfont = dict(color=_CHART_FONT_COLOR)
             except Exception:
